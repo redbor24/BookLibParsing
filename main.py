@@ -16,9 +16,9 @@ def check_for_redirect(response):
 
 def get_book_params(book_id):
     url = f'{BASE_URL}b{book_id}'
-
     response = requests.get(url)
     response.raise_for_status()
+
     soup = BeautifulSoup(response.text, 'lxml')
     content = soup.find('body').find('div', id='content')
     if not content:
@@ -43,14 +43,17 @@ def download_txt(url, filename, folder='books/'):
 
 def download_book(path_to_save, book_id):
     file_type = 'txt'
-    url = f'{BASE_URL}{file_type}.php?id={book_id}'
 
-    response = requests.get(url)
+    params = {'id': book_id}
+    url = f'{BASE_URL}{file_type}.php'
+    response = requests.get(url, params=params)
     response.raise_for_status()
+
     check_for_redirect(response)
+    download_url = response.url
     book_name, book_author, img_url = get_book_params(book_id)
     file_name = f'{book_id}. {book_name}.{file_type}'
-    download_txt(url, file_name, path_to_save)
+    download_txt(download_url, file_name, path_to_save)
 
 
 if __name__ == '__main__':
@@ -62,5 +65,4 @@ if __name__ == '__main__':
         try:
             download_book(books_subfolder, i)
         except URLError as e:
-            print(e)
-
+            print(f'{i}: {e}')
