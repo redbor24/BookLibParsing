@@ -23,29 +23,31 @@ def get_book_params(book_id):
     response.raise_for_status()
 
     book_soup = BeautifulSoup(response.text, 'lxml')
-    content = book_soup.find('body').find('div', id='content')
-    if not content:
+    book_content = book_soup.find('body').find('div', id='content')
+    if not book_content:
         return None
 
-    _ = content.find('h1').text.split('::')
+    _ = book_content.find('h1').text.split('::')
     book_name = _[0].strip()
     book_author = _[1].strip()
-    _ = content.find('table', class_='d_book').find('div', class_='bookimage')
+    _ = book_content.find('table', class_='d_book').find('div', class_='bookimage')
     img_url = _.find('img')['src']
 
-    book_comments = get_book_comments(book_soup)
+    book_comments = get_book_comments(book_content)
+    book_genres = get_book_genres(book_content)
+    return book_name, book_author, img_url, book_comments, book_genres
 
-    return book_name, book_author, img_url, book_comments
+
+def get_book_genres(soup):
+    _ = soup.find('span', class_='d_book').findAll('a')
+    return [genre.text for genre in _]
 
 
-def get_book_comments(book_soup):
-    comments_soup = book_soup.find('body').find('div', id='content').\
-                    find_all('div', class_='texts')
-    comments = [
+def get_book_comments(soup):
+    comments_soup = soup.find_all('div', class_='texts')
+    return [
         comment.find('span', class_='black').text for comment in comments_soup
     ]
-
-    return '\n'.join(comments)
 
 
 def download_txt(url, filename, folder='books/'):
@@ -74,8 +76,10 @@ def download_book(book_path, image_path, book_id):
     check_for_redirect(book_resp)
 
     download_url = book_resp.url
-    book_name, book_author, img_url, book_comments = get_book_params(book_id)
-    # print(f'book_params is {book_name, book_author, img_url, book_comments}')
+    book_name, book_author, img_url, book_comments, book_genres = \
+        get_book_params(book_id)
+    print('book_params is'
+          f' {book_name, book_author, img_url, book_comments, book_genres}')
     img_url = urljoin(BASE_URL, img_url)
     img_filename = unquote(
         str(Path(image_path) / os.path.basename(urlparse(img_url).path))
@@ -89,7 +93,7 @@ if __name__ == '__main__':
     os.makedirs(BOOKS_SUBPATH, exist_ok=True)
     os.makedirs(IMAGES_SUBPATH, exist_ok=True)
     book_id = 1
-    book_count = 10
+    book_count = 1
     for i in range(book_id, book_id + book_count):
         try:
             download_book(BOOKS_SUBPATH, IMAGES_SUBPATH, i)
