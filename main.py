@@ -1,7 +1,8 @@
+import logging
 import os
 from pathlib import Path
 from urllib.error import URLError
-from urllib.parse import urljoin, urlparse, unquote
+from urllib.parse import unquote, urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -11,18 +12,16 @@ BASE_URL = 'http://tululu.org/'
 BOOKS_SUBPATH = 'books'
 IMAGES_SUBPATH = 'images'
 
+logger = logging.getLogger()
+
 
 def check_for_redirect(response):
     if response.history:
         raise URLError('Текст недоступен для скачивания')
 
 
-def get_book_params(book_id):
-    url = f'{BASE_URL}b{book_id}'
-    response = requests.get(url)
-    response.raise_for_status()
-
-    book_soup = BeautifulSoup(response.text, 'lxml')
+def parse_book_page(book_html):
+    book_soup = BeautifulSoup(book_html, 'lxml')
     book_content = book_soup.find('body').find('div', id='content')
     if not book_content:
         return None
@@ -30,12 +29,19 @@ def get_book_params(book_id):
     _ = book_content.find('h1').text.split('::')
     book_name = _[0].strip()
     book_author = _[1].strip()
-    _ = book_content.find('table', class_='d_book').find('div', class_='bookimage')
+    _ = book_content.find('table', class_='d_book').\
+        find('div', class_='bookimage')
     img_url = _.find('img')['src']
 
     book_comments = get_book_comments(book_content)
     book_genres = get_book_genres(book_content)
-    return book_name, book_author, img_url, book_comments, book_genres
+    return {
+        'name': book_name,
+        'author': book_author,
+        'img_url': img_url,
+        'comments': book_comments,
+        'genres': book_genres
+    }
 
 
 def get_book_genres(soup):
@@ -69,33 +75,44 @@ def download_img(url, filename):
 def download_book(book_path, image_path, book_id):
     file_type = 'txt'
 
+    book_page_url = f'{BASE_URL}b{book_id}'
+    book_page_resp = requests.get(book_page_url)
+    book_page_resp.raise_for_status()
+    parsed_book = parse_book_page(book_page_resp.content)
+    logger.info(book_page_url)
+    logger.info(f'  parsed_book: {parsed_book}')
+
     params = {'id': book_id}
     url = f'{BASE_URL}{file_type}.php'
     book_resp = requests.get(url, params=params)
     book_resp.raise_for_status()
     check_for_redirect(book_resp)
-
     download_url = book_resp.url
-    book_name, book_author, img_url, book_comments, book_genres = \
-        get_book_params(book_id)
-    print('book_params is'
-          f' {book_name, book_author, img_url, book_comments, book_genres}')
-    img_url = urljoin(BASE_URL, img_url)
+
+    img_url = urljoin(BASE_URL, parsed_book['img_url'])
     img_filename = unquote(
         str(Path(image_path) / os.path.basename(urlparse(img_url).path))
     )
-    book_file_name = f'{book_id}. {book_name}.{file_type}'
+    book_file_name = f'{book_id}. {parsed_book["name"]}.{file_type}'
     download_txt(download_url, book_file_name, book_path)
     download_img(img_url, img_filename)
 
 
 if __name__ == '__main__':
+    logger.setLevel(logging.INFO)
+    log_handler = logging.FileHandler('LibParser.log', encoding='utf-8')
+    log_handler.setFormatter(
+        logging.Formatter('%(asctime)s - %(message)s')
+    )
+    logger.addHandler(log_handler)
+
     os.makedirs(BOOKS_SUBPATH, exist_ok=True)
     os.makedirs(IMAGES_SUBPATH, exist_ok=True)
     book_id = 1
-    book_count = 1
+    book_count = 10
     for i in range(book_id, book_id + book_count):
         try:
             download_book(BOOKS_SUBPATH, IMAGES_SUBPATH, i)
         except URLError as e:
             print(f'{i}: {e}')
+            logger.info(f'{i}: {e}')
