@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 from urllib.error import URLError
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, unquote
 
 import requests
 from bs4 import BeautifulSoup
@@ -22,8 +22,8 @@ def get_book_params(book_id):
     response = requests.get(url)
     response.raise_for_status()
 
-    soup = BeautifulSoup(response.text, 'lxml')
-    content = soup.find('body').find('div', id='content')
+    book_soup = BeautifulSoup(response.text, 'lxml')
+    content = book_soup.find('body').find('div', id='content')
     if not content:
         return None
 
@@ -32,7 +32,20 @@ def get_book_params(book_id):
     book_author = _[1].strip()
     _ = content.find('table', class_='d_book').find('div', class_='bookimage')
     img_url = _.find('img')['src']
-    return book_name, book_author, img_url
+
+    book_comments = get_book_comments(book_soup)
+
+    return book_name, book_author, img_url, book_comments
+
+
+def get_book_comments(book_soup):
+    comments_soup = book_soup.find('body').find('div', id='content').\
+                    find_all('div', class_='texts')
+    comments = [
+        comment.find('span', class_='black').text for comment in comments_soup
+    ]
+
+    return '\n'.join(comments)
 
 
 def download_txt(url, filename, folder='books/'):
@@ -56,18 +69,18 @@ def download_book(book_path, image_path, book_id):
 
     params = {'id': book_id}
     url = f'{BASE_URL}{file_type}.php'
-    response = requests.get(url, params=params)
-    response.raise_for_status()
-    check_for_redirect(response)
+    book_resp = requests.get(url, params=params)
+    book_resp.raise_for_status()
+    check_for_redirect(book_resp)
 
-    download_url = response.url
-    book_name, book_author, img_url = get_book_params(book_id)
+    download_url = book_resp.url
+    book_name, book_author, img_url, book_comments = get_book_params(book_id)
+    # print(f'book_params is {book_name, book_author, img_url, book_comments}')
     img_url = urljoin(BASE_URL, img_url)
-    img_filename = Path(image_path) / os.path.basename(urlparse(img_url).path)
+    img_filename = unquote(
+        str(Path(image_path) / os.path.basename(urlparse(img_url).path))
+    )
     book_file_name = f'{book_id}. {book_name}.{file_type}'
-
-    print(f'img_url: {img_url}, filename: {img_filename}')
-
     download_txt(download_url, book_file_name, book_path)
     download_img(img_url, img_filename)
 
