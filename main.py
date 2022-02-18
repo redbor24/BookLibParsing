@@ -1,3 +1,4 @@
+import argparse
 import logging
 import os
 from pathlib import Path
@@ -9,8 +10,8 @@ from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 
 BASE_URL = 'http://tululu.org/'
-BOOKS_SUBPATH = 'books'
-IMAGES_SUBPATH = 'images'
+BOOKS_SUBFOLDER = 'books'
+IMAGES_SUBFOLDER = 'images'
 
 logger = logging.getLogger()
 
@@ -60,7 +61,7 @@ def download_txt(url, filename, folder='books/'):
     filename = Path(folder) / sanitize_filename(filename)
     response = requests.get(url)
     response.raise_for_status()
-    with open(filename, 'w') as file:
+    with open(filename, 'w', encoding='utf-8') as file:
         file.write(response.text)
     return filename
 
@@ -99,6 +100,14 @@ def download_book(book_path, image_path, book_id):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Программа скачивает из библиотеки tululu.ru книги'
+                    ' по указанному диапазону их id.'
+    )
+    parser.add_argument('start_id', help='Начальный id книги для скачивания', type=int)
+    parser.add_argument('end_id', help='Конечный id книги для скачивания', type=int)
+    args = parser.parse_args()
+
     logger.setLevel(logging.INFO)
     log_handler = logging.FileHandler('LibParser.log', encoding='utf-8')
     log_handler.setFormatter(
@@ -106,13 +115,15 @@ if __name__ == '__main__':
     )
     logger.addHandler(log_handler)
 
-    os.makedirs(BOOKS_SUBPATH, exist_ok=True)
-    os.makedirs(IMAGES_SUBPATH, exist_ok=True)
-    book_id = 1
-    book_count = 10
-    for i in range(book_id, book_id + book_count):
+    start_id = int(args.start_id)
+    end_id = int(args.end_id)
+    book_count = end_id - start_id + 1
+
+    os.makedirs(BOOKS_SUBFOLDER, exist_ok=True)
+    os.makedirs(IMAGES_SUBFOLDER, exist_ok=True)
+    for i in range(start_id, start_id + book_count):
         try:
-            download_book(BOOKS_SUBPATH, IMAGES_SUBPATH, i)
+            download_book(BOOKS_SUBFOLDER, IMAGES_SUBFOLDER, i)
         except URLError as e:
             print(f'{i}: {e}')
             logger.info(f'{i}: {e}')
