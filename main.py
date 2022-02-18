@@ -46,7 +46,7 @@ def parse_book_page(book_html):
 
 
 def get_book_genres(soup):
-    _ = soup.find('span', class_='d_book').findAll('a')
+    _ = soup.find('span', class_='d_book').find_all('a')
     return [genre.text for genre in _]
 
 
@@ -125,5 +125,5 @@ if __name__ == '__main__':
         try:
             download_book(BOOKS_SUBFOLDER, IMAGES_SUBFOLDER, i)
         except URLError as e:
-            print(f'{i}: {e}')
+            print(f'book id={i}: {e}')
             logger.info(f'{i}: {e}')
