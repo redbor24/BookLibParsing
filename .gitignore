@@ -1,7 +1,6 @@
-*.txt
-*.svg
-*.jpg
-*.gif
+books/*.txt
+images/*.jpg
+images/*.gif
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
