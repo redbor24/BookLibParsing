@@ -81,7 +81,6 @@ def download_book(book_path, image_path, book_id):
     book_page_resp.raise_for_status()
     parsed_book = parse_book_page(book_page_resp.content)
     logger.info(book_page_url)
-    logger.info(f'  parsed_book: {parsed_book}')
 
     params = {'id': book_id}
     url = f'{BASE_URL}{file_type}.php'
@@ -97,6 +96,7 @@ def download_book(book_path, image_path, book_id):
     book_file_name = f'{book_id}. {parsed_book["name"]}.{file_type}'
     download_txt(download_url, book_file_name, book_path)
     download_img(img_url, img_filename)
+    logger.info('  Книга скачана')
 
 
 if __name__ == '__main__':
@@ -104,8 +104,12 @@ if __name__ == '__main__':
         description='Программа скачивает из библиотеки tululu.ru книги'
                     ' по указанному диапазону их id.'
     )
-    parser.add_argument('start_id', help='Начальный id книги для скачивания', type=int)
-    parser.add_argument('end_id', help='Конечный id книги для скачивания', type=int)
+    parser.add_argument('start_id',
+                        help='Начальный id книги для скачивания',
+                        type=int)
+    parser.add_argument('end_id',
+                        help='Конечный id книги для скачивания',
+                        type=int)
     args = parser.parse_args()
 
     logger.setLevel(logging.INFO)
@@ -115,15 +119,10 @@ if __name__ == '__main__':
     )
     logger.addHandler(log_handler)
 
-    start_id = int(args.start_id)
-    end_id = int(args.end_id)
-    book_count = end_id - start_id + 1
-
     os.makedirs(BOOKS_SUBFOLDER, exist_ok=True)
     os.makedirs(IMAGES_SUBFOLDER, exist_ok=True)
-    for i in range(start_id, start_id + book_count):
+    for book in range(args.start_id, args.end_id + 1):
         try:
-            download_book(BOOKS_SUBFOLDER, IMAGES_SUBFOLDER, i)
+            download_book(BOOKS_SUBFOLDER, IMAGES_SUBFOLDER, book)
         except URLError as e:
-            print(f'book id={i}: {e}')
-            logger.info(f'{i}: {e}')
+            logger.info(f'{book}: {e}')
