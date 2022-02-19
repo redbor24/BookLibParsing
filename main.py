@@ -57,12 +57,11 @@ def get_book_comments(soup):
     ]
 
 
-def download_txt(url, filename, folder='books/'):
+def download_txt(book_response, filename, folder='books/'):
     filename = Path(folder) / sanitize_filename(filename)
-    response = requests.get(url)
-    response.raise_for_status()
+
     with open(filename, 'w', encoding='utf-8') as file:
-        file.write(response.text)
+        file.write(book_response.text)
     return filename
 
 
@@ -87,14 +86,14 @@ def download_book(book_path, image_path, book_id):
     book_resp = requests.get(url, params=params)
     book_resp.raise_for_status()
     check_for_redirect(book_resp)
-    download_url = book_resp.url
+
+    book_file_name = f'{book_id}. {parsed_book["name"]}.{file_type}'
+    download_txt(book_resp, book_file_name, book_path)
 
     img_url = urljoin(BASE_URL, parsed_book['img_url'])
     img_filename = unquote(
         str(Path(image_path) / os.path.basename(urlparse(img_url).path))
     )
-    book_file_name = f'{book_id}. {parsed_book["name"]}.{file_type}'
-    download_txt(download_url, book_file_name, book_path)
     download_img(img_url, img_filename)
     logger.info('  Книга скачана')
 
