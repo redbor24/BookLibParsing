@@ -27,15 +27,22 @@ def parse_book_page(book_html):
     if not book_content:
         return None
 
-    _ = book_content.find('h1').text.split('::')
-    book_name = _[0].strip()
-    book_author = _[1].strip()
-    _ = book_content.find('table', class_='d_book').\
-        find('div', class_='bookimage')
-    img_url = _.find('img')['src']
+    name_and_author = book_content.find('h1').text.split('::')
+    book_name, book_author = [word.strip() for word in name_and_author]
 
-    book_comments = get_book_comments(book_content)
-    book_genres = get_book_genres(book_content)
+    img_sub_url = book_content.find('table', class_='d_book'). \
+        find('div', class_='bookimage'). \
+        find('img')['src']
+    img_url = urljoin(BASE_URL, img_sub_url)
+
+    comments_soup = book_content.find_all('div', class_='texts')
+    book_comments = [
+        comment.find('span', class_='black').text for comment in comments_soup
+    ]
+
+    genres_soup = book_content.find('span', class_='d_book').find_all('a')
+    book_genres = [genre.text for genre in genres_soup]
+
     return {
         'name': book_name,
         'author': book_author,
@@ -43,18 +50,6 @@ def parse_book_page(book_html):
         'comments': book_comments,
         'genres': book_genres
     }
-
-
-def get_book_genres(soup):
-    _ = soup.find('span', class_='d_book').find_all('a')
-    return [genre.text for genre in _]
-
-
-def get_book_comments(soup):
-    comments_soup = soup.find_all('div', class_='texts')
-    return [
-        comment.find('span', class_='black').text for comment in comments_soup
-    ]
 
 
 def download_txt(book_response, filename, folder='books/'):
@@ -78,8 +73,10 @@ def download_book(book_path, image_path, book_id):
     book_page_url = f'{BASE_URL}b{book_id}'
     book_page_resp = requests.get(book_page_url)
     book_page_resp.raise_for_status()
+    check_for_redirect(book_page_resp)
     parsed_book = parse_book_page(book_page_resp.content)
-    logger.info(book_page_url)
+    parsed_book.update({'book_page_url': book_page_url})
+    logger.info(f'{book_id}: {parsed_book}')
 
     params = {'id': book_id}
     url = f'{BASE_URL}{file_type}.php'
@@ -95,7 +92,7 @@ def download_book(book_path, image_path, book_id):
         str(Path(image_path) / os.path.basename(urlparse(img_url).path))
     )
     download_img(img_url, img_filename)
-    logger.info('  Книга скачана')
+    logger.info(f'{book_id}: Книга скачана')
 
 
 if __name__ == '__main__':
@@ -124,4 +121,4 @@ if __name__ == '__main__':
         try:
             download_book(BOOKS_SUBFOLDER, IMAGES_SUBFOLDER, book)
         except URLError as e:
-            logger.info(f'{book}: {e}')
+            logger.error(f'{book}: {e}')
