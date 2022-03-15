@@ -1,12 +1,9 @@
-import json
-import time
-
-from collections import OrderedDict
-from pprint import pprint
-
 import argparse
+import json
 import logging
 import os
+import time
+from collections import OrderedDict
 from pathlib import Path
 from urllib.error import HTTPError
 from urllib.parse import unquote, urljoin, urlparse
@@ -17,8 +14,9 @@ from pathvalidate import sanitize_filename
 
 BASE_URL = 'http://tululu.org/'
 CATEGORY_URL = f'{BASE_URL}l55/'
-HTTP_TIMEOUT = 3  # секунды
-WAIT_TIME = 3  # секунды
+# секунды
+HTTP_TIMEOUT = 3
+WAIT_TIME = 3
 
 BOOKS_SUBFOLDER = 'books'
 IMAGES_SUBFOLDER = 'images'
@@ -34,7 +32,9 @@ headers = OrderedDict({
 
 def check_for_redirect(url, response):
     if response.history:
-        if url not in response.url:
+        parsed_url = ''.join(urlparse(url)._replace(scheme=''))
+        parsed_resp_url = ''.join(urlparse(response.url)._replace(scheme=''))
+        if parsed_url not in parsed_resp_url:
             raise HTTPError(
                 response.url,
                 response.history[0].status_code,
@@ -91,20 +91,19 @@ def download_img(url, filename):
 
 def download_book(book_url, book_sub_path, image_path):
     file_type = 'txt'
-    logger.info(f'Скачиваем книгу {book_url}...')
+    logger.info(f'{book_url}: скачиваем книгу...')
     book_id = int(urlparse(book_url).path.replace('/', '').replace('b', ''))
 
-    book_page_resp = http_get(book_url, headers=headers)
+    book_page_resp = http_get(book_url)
     book_page_resp.raise_for_status()
     check_for_redirect(book_url, book_page_resp)
 
     parsed_book = parse_book_page(book_page_resp.content)
     parsed_book['book_page_url'] = book_url
-    logger.info(f'{book_url}: {parsed_book}')
 
     params = {'id': book_id}
     url = f'{BASE_URL}{file_type}.php'
-    book_resp = http_get(url, params=params, headers=headers)
+    book_resp = http_get(url, params=params)
     book_resp.raise_for_status()
     check_for_redirect(url, book_resp)
 
@@ -160,9 +159,12 @@ def get_books_links_from_page(category_page_soup):
 
 def get_links_for_category(category_url, start_page=1, end_page=0,
                            book_count=0):
-    if end_page == 0:
-        end_page = get_page_count(category_url)
-    if start_page > end_page:
+    # Укажем значение номера страницы, которое вряд ли может быть в реальности
+    incredeble_page_num = 10000
+    if not end_page:
+        end_page = incredeble_page_num
+
+    if start_page > end_page > 0:
         raise(Exception('Номер начальной страницы должен быть меньше номера'
                         ' последней'))
 
@@ -173,9 +175,11 @@ def get_links_for_category(category_url, start_page=1, end_page=0,
         else:
             url = f'{category_url}{page}/'
 
-        page_resp = http_get(url, headers=headers)
+        page_resp = http_get(url)
         page_resp.raise_for_status()
         page_resp_soup = BeautifulSoup(page_resp.content, 'html.parser')
+        if end_page == incredeble_page_num:
+            end_page = get_page_count(page_resp_soup)
         page_book_links = get_books_links_from_page(page_resp_soup)
         book_urls.extend(page_book_links)
 
@@ -196,26 +200,15 @@ def http_get(url, headers=None, params=None, wait=True):
         resp_ok = resp.ok
         if not resp_ok:
             try_counter += 1
-            logger.warning(f'url: {url}, status_code: {resp.status_code}'
+            logger.warning(f'{url}: status_code: {resp.status_code}'
                            f', try count: {try_counter}/{max_try_count}')
     resp.raise_for_status()
     return resp
 
 
-def get_category_links(category_url, start_page=1, end_page=0,
-                       book_count=0):
+def download_category(category_url, start_page=1, end_page=0, book_count=0):
     book_links = get_links_for_category(category_url, start_page, end_page,
                                         book_count)
-
-    if book_count > 0:
-        return book_links[:book_count]
-    else:
-        return book_links
-
-
-def download_category(category_url, start_page=1, end_page=0, book_count=0):
-    book_links = get_category_links(category_url, start_page, end_page,
-                                    book_count)
 
     dowloaded_books = []
     for book_link in book_links:
@@ -223,10 +216,10 @@ def download_category(category_url, start_page=1, end_page=0, book_count=0):
             dowloaded_books.append(
                 download_book(book_link, BOOKS_SUBFOLDER, IMAGES_SUBFOLDER)
             )
-        except HTTPError as e:
-            logger.error(f'{book_link}: {e}')
-        except Exception as e2:
-            logger.error(f'{book_link}: общая ошибка. {e2}')
+        except HTTPError as http_error:
+            logger.error(f'{book_link}: {http_error}')
+        except Exception as error:
+            logger.error(f'{book_link}: общая ошибка. {error}')
 
     filename = 'downloaded_books.json'
     with open(filename, 'w', encoding='utf-8') as f:
@@ -236,27 +229,25 @@ def download_category(category_url, start_page=1, end_page=0, book_count=0):
 
 
 if __name__ == '__main__':
-    # parser = argparse.ArgumentParser(
-    #     description='Программа скачивает из библиотеки tululu.ru книги'
-    #                 ' по указанному диапазону их id.'
-    # )
-    # parser.add_argument('start_page',
-    #                     help='Начальная страница категории',
-    #                     type=int)
-    # parser.add_argument('end_page',
-    #                     help='Конечная страница категории',
-    #                     type=int)
-    # parser.add_argument('book_count',
-    #                     help='Количество книг для скачивания',
-    #                     type=int)
-    # args = parser.parse_args()
-    # start_page = args.start_page
-    # end_page = args.end_page
-    # book_count = args.book_count
-
-    start_page = 1
-    end_page = 2
-    book_count = 4
+    parser = argparse.ArgumentParser(
+        description='Программа скачивает из библиотеки tululu.ru книги жанра '
+                    '"Научная фантастика" с заданного диапазона страниц.'
+    )
+    parser.add_argument('-start_page',
+                        required=True,
+                        help='Начальная страница категории',
+                        type=int)
+    parser.add_argument('-end_page',
+                        help='Конечная страница категории',
+                        type=int)
+    parser.add_argument('-book_count',
+                        help='Количество книг для скачивания',
+                        default=0,
+                        type=int)
+    args = parser.parse_args()
+    start_page = args.start_page
+    end_page = args.end_page
+    book_count = args.book_count
 
     logger.setLevel(logging.INFO)
     log_handler = logging.FileHandler('LibParser.log', encoding='utf-8')
@@ -265,32 +256,16 @@ if __name__ == '__main__':
     )
     logger.addHandler(log_handler)
     logger.info('------------------- Запуск программы -------------------')
+    logger.info(f'Параметры: {args}')
     try:
-
         os.makedirs(BOOKS_SUBFOLDER, exist_ok=True)
         os.makedirs(IMAGES_SUBFOLDER, exist_ok=True)
 
-        dowloaded_books = download_category(CATEGORY_URL,
-                                            start_page=start_page,
-                                            end_page=end_page,
-                                            book_count=book_count)
-        print(dowloaded_books)
-
-        # book_url = 'https://tululu.org/b247/'
-        # book_page_resp = http_get(book_url, headers=headers)
-        # book_page_resp.raise_for_status()
-        # check_for_redirect(book_url, book_page_resp)
-
-        # with open('qqq.html', 'r') as f:
-        #     book = f.read()
-        # parsed_book = parse_book_page(book)
-        # pprint(parsed_book)
-
-        # with open('category.html', 'r') as f:
-        #     category_page_html = f.read()
-        # category_resp_soup = BeautifulSoup(category_page_html, 'html.parser')
-        # pprint(get_books_links_from_page(category_resp_soup))
-        # pprint(get_page_count(category_resp_soup))
-
+        download_category(CATEGORY_URL,
+                          start_page=start_page,
+                          end_page=end_page,
+                          book_count=book_count)
+    except Exception as e:
+        logger.error(f'--! Ошибка: {e}')
     finally:
         logger.info('------------------- Работа завершена -------------------')
