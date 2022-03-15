@@ -18,8 +18,13 @@ CATEGORY_URL = f'{BASE_URL}l55/'
 HTTP_TIMEOUT = 3
 WAIT_TIME = 3
 
-BOOKS_SUBFOLDER = 'books'
-IMAGES_SUBFOLDER = 'images'
+BOOKS_SUBPATH = 'books'
+IMAGES_SUBPATH = 'images'
+
+DEST_FOLDER = ''
+SKIP_IMAGES = False
+SKIP_BOOKS = False
+JSON_PATH = ''
 
 logger = logging.getLogger()
 
@@ -71,7 +76,7 @@ def parse_book_page(page_content):
     }
 
 
-def download_txt(book_response, filename, folder='books/'):
+def download_txt(book_response, filename, folder):
     filename_for_save = unquote(
         str(Path(folder) / sanitize_filename(filename))
     )
@@ -82,7 +87,6 @@ def download_txt(book_response, filename, folder='books/'):
 
 
 def download_img(url, filename):
-    # response = requests.get(url, headers=headers)
     response = http_get(url, headers=headers)
     response.raise_for_status()
     with open(filename, 'wb') as file:
@@ -107,14 +111,19 @@ def download_book(book_url, book_sub_path, image_path):
     book_resp.raise_for_status()
     check_for_redirect(url, book_resp)
 
-    book_file_name = f'{book_id}. {parsed_book["name"]}.{file_type}'
-    saved_filename = download_txt(book_resp, book_file_name, book_sub_path)
+    saved_filename = ''
+    if not SKIP_BOOKS:
+        book_file_name = f'{book_id}. {parsed_book["name"]}.{file_type}'
+        saved_filename = download_txt(book_resp, book_file_name, book_sub_path)
 
-    img_url = urljoin(BASE_URL, parsed_book['img_url'])
-    img_filename = unquote(
-        str(Path(image_path) / os.path.basename(urlparse(img_url).path))
-    )
-    download_img(img_url, img_filename)
+    img_filename = ''
+    if not SKIP_IMAGES:
+        img_url = urljoin(BASE_URL, parsed_book['img_url'])
+        img_filename = unquote(
+            str(Path(image_path) / os.path.basename(urlparse(img_url).path))
+        )
+        download_img(img_url, img_filename)
+
     logger.info(f'{book_url}: Книга скачана')
 
     return {
@@ -206,7 +215,7 @@ def http_get(url, headers=None, params=None, wait=True):
     return resp
 
 
-def download_category(category_url, start_page=1, end_page=0, book_count=0):
+def download_category(category_url, start_page, end_page, book_count):
     book_links = get_links_for_category(category_url, start_page, end_page,
                                         book_count)
 
@@ -214,14 +223,14 @@ def download_category(category_url, start_page=1, end_page=0, book_count=0):
     for book_link in book_links:
         try:
             dowloaded_books.append(
-                download_book(book_link, BOOKS_SUBFOLDER, IMAGES_SUBFOLDER)
+                download_book(book_link, BOOKS_SUBPATH, IMAGES_SUBPATH)
             )
         except HTTPError as http_error:
             logger.error(f'{book_link}: {http_error}')
         except Exception as error:
             logger.error(f'{book_link}: общая ошибка. {error}')
 
-    filename = 'downloaded_books.json'
+    filename = Path(JSON_PATH) / 'downloaded_books.json'
     with open(filename, 'w', encoding='utf-8') as f:
         json.dump(dowloaded_books, f, ensure_ascii=False)
 
@@ -233,21 +242,44 @@ if __name__ == '__main__':
         description='Программа скачивает из библиотеки tululu.ru книги жанра '
                     '"Научная фантастика" с заданного диапазона страниц.'
     )
-    parser.add_argument('-start_page',
-                        required=True,
-                        help='Начальная страница категории',
-                        type=int)
-    parser.add_argument('-end_page',
-                        help='Конечная страница категории',
-                        type=int)
-    parser.add_argument('-book_count',
-                        help='Количество книг для скачивания',
-                        default=0,
-                        type=int)
+    parser.add_argument('-start_page', required=True, type=int,
+                        help='Начальная страница категории')
+    parser.add_argument('-end_page', type=int, default=0,
+                        help='Конечная страница категории')
+    parser.add_argument('-book_count', default=0, type=int,
+                        help='Количество книг для скачивания')
+
+    parser.add_argument('-dest_folder', type=str, default='',
+                        help='Папка для сохранения всех скачанных файлов')
+    parser.add_argument('-skip_imgs', action='store_true',
+                        help='Не сохранять картинки')
+    parser.add_argument('-skip_books', action='store_true',
+                        help='Не сохранять книги')
+    parser.add_argument('-json_path', type=str, default='',
+                        help='Путь к json-файлу с результатами скачивания')
+
     args = parser.parse_args()
+
     start_page = args.start_page
     end_page = args.end_page
     book_count = args.book_count
+
+    SKIP_IMAGES = args.skip_imgs
+    SKIP_BOOKS = args.skip_books
+
+    if args.dest_folder:
+        DEST_FOLDER = args.dest_folder
+        BOOKS_SUBPATH = Path(DEST_FOLDER) / BOOKS_SUBPATH
+        IMAGES_SUBPATH = Path(DEST_FOLDER) / IMAGES_SUBPATH
+
+    if not SKIP_BOOKS:
+        os.makedirs(BOOKS_SUBPATH, exist_ok=True)
+    if not SKIP_IMAGES:
+        os.makedirs(IMAGES_SUBPATH, exist_ok=True)
+
+    if args.json_path:
+        JSON_PATH = args.json_path
+        os.makedirs(JSON_PATH, exist_ok=True)
 
     logger.setLevel(logging.INFO)
     log_handler = logging.FileHandler('LibParser.log', encoding='utf-8')
@@ -256,15 +288,14 @@ if __name__ == '__main__':
     )
     logger.addHandler(log_handler)
     logger.info('------------------- Запуск программы -------------------')
-    logger.info(f'Параметры: {args}')
-    try:
-        os.makedirs(BOOKS_SUBFOLDER, exist_ok=True)
-        os.makedirs(IMAGES_SUBFOLDER, exist_ok=True)
+    logger.info(f'Параметры запуска:')
+    for param in args._get_kwargs():
+        logger.info(f'  {param[0]}: {param[1]}')
+    logger.info('--------------------------------------------------------')
 
-        download_category(CATEGORY_URL,
-                          start_page=start_page,
-                          end_page=end_page,
-                          book_count=book_count)
+    try:
+        download_category(CATEGORY_URL, start_page=start_page,
+                          end_page=end_page, book_count=book_count)
     except Exception as e:
         logger.error(f'--! Ошибка: {e}')
     finally:
