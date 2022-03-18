@@ -126,7 +126,7 @@ def download_book(book_url, book_sub_path, image_path, skip_book, skip_image):
     return {
         'url': parsed_book['book_page_url'],
         'img_src': img_filename,
-        'book_path': str(saved_filename),
+        'book_path': saved_filename,
         'title': parsed_book['name'],
         'author': parsed_book['author'],
         'comments': parsed_book['comments'],
