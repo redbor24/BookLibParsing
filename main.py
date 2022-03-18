@@ -21,9 +21,6 @@ WAIT_TIME = 3
 BOOKS_SUBPATH = 'books'
 IMAGES_SUBPATH = 'images'
 
-DEST_FOLDER = ''
-SKIP_IMAGES = False
-SKIP_BOOKS = False
 JSON_PATH = ''
 
 logger = logging.getLogger()
@@ -93,7 +90,7 @@ def download_img(url, filename):
         file.write(response.content)
 
 
-def download_book(book_url, book_sub_path, image_path):
+def download_book(book_url, book_sub_path, image_path, skip_book, skip_image):
     file_type = 'txt'
     logger.info(f'{book_url}: скачиваем книгу...')
     book_id = int(urlparse(book_url).path.replace('/', '').replace('b', ''))
@@ -112,12 +109,12 @@ def download_book(book_url, book_sub_path, image_path):
     check_for_redirect(url, book_resp)
 
     saved_filename = ''
-    if not SKIP_BOOKS:
+    if not skip_book:
         book_file_name = f'{book_id}. {parsed_book["name"]}.{file_type}'
         saved_filename = download_txt(book_resp, book_file_name, book_sub_path)
 
     img_filename = ''
-    if not SKIP_IMAGES:
+    if not skip_image:
         img_url = urljoin(BASE_URL, parsed_book['img_url'])
         img_filename = unquote(
             str(Path(image_path) / os.path.basename(urlparse(img_url).path))
@@ -215,7 +212,9 @@ def http_get(url, headers=None, params=None, wait=True):
     return resp
 
 
-def download_category(category_url, start_page, end_page, book_count):
+def download_category(category_url, start_page, end_page, book_count,
+                      book_path, image_path,
+                      skip_books, skip_images):
     book_links = get_links_for_category(category_url, start_page, end_page,
                                         book_count)
 
@@ -223,7 +222,8 @@ def download_category(category_url, start_page, end_page, book_count):
     for book_link in book_links:
         try:
             dowloaded_books.append(
-                download_book(book_link, BOOKS_SUBPATH, IMAGES_SUBPATH)
+                download_book(book_link, book_path, image_path,
+                              skip_books, skip_images)
             )
         except HTTPError as http_error:
             logger.error(f'{book_link}: {http_error}')
@@ -249,7 +249,7 @@ if __name__ == '__main__':
     parser.add_argument('-book_count', default=0, type=int,
                         help='Количество книг для скачивания')
 
-    parser.add_argument('-dest_folder', type=str, default='',
+    parser.add_argument('-dest_folder', type=str, default='.',
                         help='Папка для сохранения всех скачанных файлов')
     parser.add_argument('-skip_imgs', action='store_true',
                         help='Не сохранять картинки')
@@ -260,18 +260,13 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    SKIP_IMAGES = args.skip_imgs
-    SKIP_BOOKS = args.skip_books
+    books_folder = Path(args.dest_folder) / BOOKS_SUBPATH
+    images_folder = Path(args.dest_folder) / IMAGES_SUBPATH
 
-    if args.dest_folder:
-        DEST_FOLDER = args.dest_folder
-        BOOKS_SUBPATH = Path(DEST_FOLDER) / BOOKS_SUBPATH
-        IMAGES_SUBPATH = Path(DEST_FOLDER) / IMAGES_SUBPATH
-
-    if not SKIP_BOOKS:
-        os.makedirs(BOOKS_SUBPATH, exist_ok=True)
-    if not SKIP_IMAGES:
-        os.makedirs(IMAGES_SUBPATH, exist_ok=True)
+    if not args.skip_books:
+        os.makedirs(books_folder, exist_ok=True)
+    if not args.skip_imgs:
+        os.makedirs(images_folder, exist_ok=True)
 
     if args.json_path:
         JSON_PATH = args.json_path
@@ -290,8 +285,15 @@ if __name__ == '__main__':
     logger.info('--------------------------------------------------------')
 
     try:
-        download_category(CATEGORY_URL, start_page=args.start_page,
-                          end_page=args.end_page, book_count=args.book_count)
+        download_category(category_url=CATEGORY_URL,
+                          start_page=args.start_page,
+                          end_page=args.end_page,
+                          book_count=args.book_count,
+                          book_path=books_folder,
+                          image_path=images_folder,
+                          skip_books=args.skip_books,
+                          skip_images=args.skip_imgs
+                          )
     except Exception as e:
         logger.error(f'--! Ошибка: {e}')
     finally:
