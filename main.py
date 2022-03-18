@@ -176,10 +176,7 @@ def get_links_for_category(category_url, start_page=1, end_page=0,
 
     book_urls = []
     for page_number in range(start_page, end_page + 1):
-        if page_number == 1:
-            url = f'{category_url}'
-        else:
-            url = f'{category_url}{page_number}/'
+        url = f'{category_url}{page_number}/'
 
         page_resp = http_get(url)
         page_resp.raise_for_status()
