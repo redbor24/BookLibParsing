@@ -151,18 +151,6 @@ def get_page_count(category_page_soup):
         return 0
 
 
-def get_books_links_from_page(category_page_soup):
-    """
-    Парсит category_page_soup для получения списка ссылок на книги
-    :param category_page_soup: HTML страницы со списком книг
-    :return: Список ссылок на книги
-    """
-    books_soup = category_page_soup.select('body div#content table.d_book')
-    return [urljoin(BASE_URL, elem.select_one('a')['href'])
-            for elem in books_soup
-           ]
-
-
 def get_links_for_category(category_url, start_page=1, end_page=0,
                            book_count=0):
     # Укажем значение номера страницы, которое вряд ли может быть в реальности
@@ -183,7 +171,12 @@ def get_links_for_category(category_url, start_page=1, end_page=0,
         page_resp_soup = BeautifulSoup(page_resp.content, 'html.parser')
         if end_page == incredeble_page_num:
             end_page = get_page_count(page_resp_soup)
-        page_book_links = get_books_links_from_page(page_resp_soup)
+
+        books_soup = page_resp_soup.select('body div#content table.d_book')
+        page_book_links = [urljoin(BASE_URL, elem.select_one('a')['href'])
+                           for elem in books_soup
+                           ]
+
         book_urls.extend(page_book_links)
 
         if book_count != 0 and len(book_urls) > book_count:
