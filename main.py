@@ -151,8 +151,7 @@ def get_page_count(category_page_soup):
         return 0
 
 
-def get_links_for_category(category_url, start_page=1, end_page=0,
-                           book_count=0):
+def get_links_for_category(category_url, start_page=1, end_page=0):
     # Укажем значение номера страницы, которое вряд ли может быть в реальности
     incredeble_page_num = 10000
     if not end_page:
@@ -179,10 +178,6 @@ def get_links_for_category(category_url, start_page=1, end_page=0,
 
         book_urls.extend(page_book_links)
 
-        if book_count != 0 and len(book_urls) > book_count:
-            book_urls = book_urls[:book_count]
-            break
-
     return book_urls
 
 
@@ -202,11 +197,10 @@ def get_http(url, headers=None, params=None, wait=True):
     return resp
 
 
-def download_category(category_url, start_page, end_page, book_count,
+def download_category(category_url, start_page, end_page,
                       book_path, image_path,
                       skip_books, skip_images):
-    book_links = get_links_for_category(category_url, start_page, end_page,
-                                        book_count)
+    book_links = get_links_for_category(category_url, start_page, end_page)
 
     dowloaded_books = []
     for book_link in book_links:
@@ -236,9 +230,6 @@ if __name__ == '__main__':
                         help='Начальная страница категории')
     parser.add_argument('-end_page', type=int, default=0,
                         help='Конечная страница категории')
-    parser.add_argument('-book_count', default=0, type=int,
-                        help='Количество книг для скачивания')
-
     parser.add_argument('-dest_folder', type=str, default='.',
                         help='Папка для сохранения всех скачанных файлов')
     parser.add_argument('-skip_imgs', action='store_true',
@@ -278,7 +269,6 @@ if __name__ == '__main__':
         download_category(category_url=CATEGORY_URL,
                           start_page=args.start_page,
                           end_page=args.end_page,
-                          book_count=args.book_count,
                           book_path=books_folder,
                           image_path=images_folder,
                           skip_books=args.skip_books,
