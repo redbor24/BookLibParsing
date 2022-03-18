@@ -260,10 +260,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    start_page = args.start_page
-    end_page = args.end_page
-    book_count = args.book_count
-
     SKIP_IMAGES = args.skip_imgs
     SKIP_BOOKS = args.skip_books
 
@@ -294,8 +290,8 @@ if __name__ == '__main__':
     logger.info('--------------------------------------------------------')
 
     try:
-        download_category(CATEGORY_URL, start_page=start_page,
-                          end_page=end_page, book_count=book_count)
+        download_category(CATEGORY_URL, start_page=args.start_page,
+                          end_page=args.end_page, book_count=args.book_count)
     except Exception as e:
         logger.error(f'--! Ошибка: {e}')
     finally:
