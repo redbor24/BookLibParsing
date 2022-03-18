@@ -142,11 +142,11 @@ def get_page_count(category_page_soup):
     """
     category_content = category_page_soup.\
         select_one('body div#content p.center')
-    paginator_soup = category_content.select('span,a')
+    paginator_content = category_content.select('span,a')
 
-    paginator_last_index = len(paginator_soup) - 1
-    if paginator_soup:
-        return int(paginator_soup[paginator_last_index].text)
+    paginator_last_index = len(paginator_content) - 1
+    if paginator_content:
+        return int(paginator_content[paginator_last_index].text)
     else:
         return 0
 
