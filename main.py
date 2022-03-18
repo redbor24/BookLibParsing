@@ -280,8 +280,8 @@ if __name__ == '__main__':
     logger.addHandler(log_handler)
     logger.info('------------------- Запуск программы -------------------')
     logger.info(f'Параметры запуска:')
-    for param in args._get_kwargs():
-        logger.info(f'  {param[0]}: {param[1]}')
+    for param_name, param_value in args._get_kwargs():
+        logger.info(f'  {param_name}: {param_value}')
     logger.info('--------------------------------------------------------')
 
     try:
