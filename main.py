@@ -84,7 +84,7 @@ def download_txt(book_response, filename, folder):
 
 
 def download_img(url, filename):
-    response = http_get(url, headers=headers)
+    response = get_http(url, headers=headers)
     response.raise_for_status()
     with open(filename, 'wb') as file:
         file.write(response.content)
@@ -95,7 +95,7 @@ def download_book(book_url, book_sub_path, image_path, skip_book, skip_image):
     logger.info(f'{book_url}: скачиваем книгу...')
     book_id = int(urlparse(book_url).path.replace('/', '').replace('b', ''))
 
-    book_page_resp = http_get(book_url)
+    book_page_resp = get_http(book_url)
     book_page_resp.raise_for_status()
     check_for_redirect(book_url, book_page_resp)
 
@@ -104,7 +104,7 @@ def download_book(book_url, book_sub_path, image_path, skip_book, skip_image):
 
     params = {'id': book_id}
     url = f'{BASE_URL}{file_type}.php'
-    book_resp = http_get(url, params=params)
+    book_resp = get_http(url, params=params)
     book_resp.raise_for_status()
     check_for_redirect(url, book_resp)
 
@@ -178,7 +178,7 @@ def get_links_for_category(category_url, start_page=1, end_page=0,
     for page_number in range(start_page, end_page + 1):
         url = f'{category_url}{page_number}/'
 
-        page_resp = http_get(url)
+        page_resp = get_http(url)
         page_resp.raise_for_status()
         page_resp_soup = BeautifulSoup(page_resp.content, 'html.parser')
         if end_page == incredeble_page_num:
@@ -193,7 +193,7 @@ def get_links_for_category(category_url, start_page=1, end_page=0,
     return book_urls
 
 
-def http_get(url, headers=None, params=None, wait=True):
+def get_http(url, headers=None, params=None, wait=True):
     resp_ok = False
     try_counter, max_try_count = 1, 10
     while not resp_ok and try_counter <= max_try_count:
