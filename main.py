@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import time
-from collections import OrderedDict
 from pathlib import Path
 from urllib.error import HTTPError
 from urllib.parse import unquote, urljoin, urlparse
@@ -14,35 +13,24 @@ from pathvalidate import sanitize_filename
 
 BASE_URL = 'http://tululu.org/'
 CATEGORY_URL = f'{BASE_URL}l55/'
-# секунды
-HTTP_TIMEOUT = 3
-WAIT_TIME = 3
+
+WAIT_TIME = 3  # секунды
 
 BOOKS_SUBPATH = 'books'
 IMAGES_SUBPATH = 'images'
 
-JSON_PATH = ''
-
 logger = logging.getLogger()
 
-headers = OrderedDict({
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:77.0)'
-                  ' Gecko/20100101 Firefox/77.0',
-    'Accept-Encoding': 'gzip, deflate, br'
-})
+
+class NoBookException(Exception):
+    pass
 
 
-def check_for_redirect(url, response):
-    if response.history:
-        parsed_url = ''.join(urlparse(url)._replace(scheme=''))
-        parsed_resp_url = ''.join(urlparse(response.url)._replace(scheme=''))
-        if parsed_url not in parsed_resp_url:
-            raise HTTPError(
-                response.url,
-                response.history[0].status_code,
-                'Текст недоступен для скачивания.',
-                '', ''
-            )
+def check_for_redirect(response):
+    if len(response.history) == 2:
+        raise HTTPError(response.url, 404, 'Запрошенная страница не найдена',
+                        '', ''
+                        )
 
 
 def parse_book_page(page_content):
@@ -58,6 +46,13 @@ def parse_book_page(page_content):
         select_one('table.d_book div.bookimage img')['src']
     img_url = urljoin(BASE_URL, img_sub_url)
 
+    try:
+        download_book_link = book_page_soup. \
+            select_one('[href^="/txt.php"]')['href']
+        download_book_link = urljoin(BASE_URL, download_book_link)
+    except TypeError:
+        download_book_link = None
+
     comments_soup = book_page_content.select('div.texts span.black')
     book_comments = [comment.text for comment in comments_soup]
 
@@ -68,6 +63,7 @@ def parse_book_page(page_content):
         'name': book_name,
         'author': book_author,
         'img_url': img_url,
+        'download_book_url': download_book_link,
         'comments': book_comments,
         'genres': book_genres
     }
@@ -84,29 +80,30 @@ def download_txt(book_response, filename, folder):
 
 
 def download_img(url, filename):
-    response = get_http(url, headers=headers)
+    response = get_http(url)
     response.raise_for_status()
     with open(filename, 'wb') as file:
         file.write(response.content)
 
 
-def download_book(book_url, book_sub_path, image_path, skip_book, skip_image):
+def download_book(book_url, book_sub_path, image_path, skip_book=False,
+                  skip_image=False):
     file_type = 'txt'
     logger.info(f'{book_url}: скачиваем книгу...')
     book_id = int(urlparse(book_url).path.replace('/', '').replace('b', ''))
 
     book_page_resp = get_http(book_url)
     book_page_resp.raise_for_status()
-    check_for_redirect(book_url, book_page_resp)
+    check_for_redirect(book_page_resp)
 
     parsed_book = parse_book_page(book_page_resp.content)
     parsed_book['book_page_url'] = book_url
 
-    params = {'id': book_id}
-    url = f'{BASE_URL}{file_type}.php'
-    book_resp = get_http(url, params=params)
+    if not parsed_book['download_book_url']:
+        raise NoBookException('Книга недоступна для скачивания')
+    book_resp = get_http(parsed_book['download_book_url'])
     book_resp.raise_for_status()
-    check_for_redirect(url, book_resp)
+    check_for_redirect(book_resp)
 
     saved_filename = ''
     if not skip_book:
@@ -115,7 +112,7 @@ def download_book(book_url, book_sub_path, image_path, skip_book, skip_image):
 
     img_filename = ''
     if not skip_image:
-        img_url = urljoin(BASE_URL, parsed_book['img_url'])
+        img_url = parsed_book['img_url']
         img_filename = unquote(
             str(Path(image_path) / os.path.basename(urlparse(img_url).path))
         )
@@ -134,42 +131,23 @@ def download_book(book_url, book_sub_path, image_path, skip_book, skip_image):
     }
 
 
-def get_page_count(category_page_soup):
-    """
-    Возвращает количество страниц пагинации
-    :param category_page_soup: HTML страницы
-    :return: int
-    """
-    category_content = category_page_soup.\
-        select_one('body div#content p.center')
-    paginator_content = category_content.select('span,a')
-
-    paginator_last_index = len(paginator_content) - 1
-    if paginator_content:
-        return int(paginator_content[paginator_last_index].text)
-    else:
-        return 0
-
-
 def get_links_for_category(category_url, start_page=1, end_page=0):
-    # Укажем значение номера страницы, которое вряд ли может быть в реальности
-    incredeble_page_num = 10000
-    if not end_page:
-        end_page = incredeble_page_num
-
     if start_page > end_page > 0:
         raise(Exception('Номер начальной страницы должен быть меньше номера'
                         ' последней'))
 
     book_urls = []
-    for page_number in range(start_page, end_page + 1):
+    page_number = start_page
+    while True:
         url = f'{category_url}{page_number}/'
 
         page_resp = get_http(url)
         page_resp.raise_for_status()
+        try:
+            check_for_redirect(page_resp)
+        except HTTPError:
+            break
         page_resp_soup = BeautifulSoup(page_resp.content, 'html.parser')
-        if end_page == incredeble_page_num:
-            end_page = get_page_count(page_resp_soup)
 
         books_soup = page_resp_soup.select('body div#content table.d_book')
         page_book_links = [urljoin(BASE_URL, elem.select_one('a')['href'])
@@ -177,6 +155,9 @@ def get_links_for_category(category_url, start_page=1, end_page=0):
                            ]
 
         book_urls.extend(page_book_links)
+        if page_number == end_page:
+            break
+        page_number += 1
 
     return book_urls
 
@@ -198,7 +179,7 @@ def get_http(url, headers=None, params=None, wait=True):
 
 
 def download_category(category_url, start_page, end_page,
-                      book_path, image_path,
+                      book_path, image_path, json_path,
                       skip_books, skip_images):
     book_links = get_links_for_category(category_url, start_page, end_page)
 
@@ -214,7 +195,7 @@ def download_category(category_url, start_page, end_page,
         except Exception as error:
             logger.error(f'{book_link}: общая ошибка. {error}')
 
-    filename = Path(JSON_PATH) / 'downloaded_books.json'
+    filename = Path(json_path) / 'downloaded_books.json'
     with open(filename, 'w', encoding='utf-8') as f:
         json.dump(dowloaded_books, f, ensure_ascii=False)
 
@@ -232,12 +213,12 @@ if __name__ == '__main__':
                         help='Конечная страница категории')
     parser.add_argument('-dest_folder', type=str, default='.',
                         help='Папка для сохранения всех скачанных файлов')
+    parser.add_argument('-json_path', type=str, default='.',
+                        help='Путь к json-файлу с результатами скачивания')
     parser.add_argument('-skip_imgs', action='store_true',
                         help='Не сохранять картинки')
     parser.add_argument('-skip_books', action='store_true',
                         help='Не сохранять книги')
-    parser.add_argument('-json_path', type=str, default='',
-                        help='Путь к json-файлу с результатами скачивания')
 
     args = parser.parse_args()
 
@@ -248,10 +229,8 @@ if __name__ == '__main__':
         os.makedirs(books_folder, exist_ok=True)
     if not args.skip_imgs:
         os.makedirs(images_folder, exist_ok=True)
-
-    if args.json_path:
-        JSON_PATH = args.json_path
-        os.makedirs(JSON_PATH, exist_ok=True)
+    if args.json_path != '.':
+        os.makedirs(args.json_path, exist_ok=True)
 
     logger.setLevel(logging.INFO)
     log_handler = logging.FileHandler('LibParser.log', encoding='utf-8')
@@ -259,8 +238,9 @@ if __name__ == '__main__':
         logging.Formatter('%(asctime)s - %(message)s')
     )
     logger.addHandler(log_handler)
+
     logger.info('------------------- Запуск программы -------------------')
-    logger.info(f'Параметры запуска:')
+    logger.info('Параметры запуска:')
     for param_name, param_value in args._get_kwargs():
         logger.info(f'  {param_name}: {param_value}')
     logger.info('--------------------------------------------------------')
@@ -271,6 +251,7 @@ if __name__ == '__main__':
                           end_page=args.end_page,
                           book_path=books_folder,
                           image_path=images_folder,
+                          json_path=args.json_path,
                           skip_books=args.skip_books,
                           skip_images=args.skip_imgs
                           )
