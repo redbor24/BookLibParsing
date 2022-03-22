@@ -90,7 +90,7 @@ def download_book(book_url, book_sub_path, image_path, skip_book=False,
                   skip_image=False):
     file_type = 'txt'
     logger.info(f'{book_url}: скачиваем книгу...')
-    book_id = int(urlparse(book_url).path.replace('/', '').replace('b', ''))
+    book_id = urlparse(book_url).path.replace('/', '').replace('b', '')
 
     book_page_resp = get_http(book_url)
     book_page_resp.raise_for_status()
