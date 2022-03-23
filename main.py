@@ -36,8 +36,6 @@ def check_for_redirect(response):
 def parse_book_page(page_content):
     book_page_soup = BeautifulSoup(page_content, 'html.parser')
     book_page_content = book_page_soup.select_one('body div#content')
-    if not book_page_content:
-        return None
 
     name_and_author = book_page_content.select_one('h1').text.split('::')
     book_name, book_author = [word.strip() for word in name_and_author]
@@ -80,7 +78,7 @@ def download_txt(book_response, filename, folder):
 
 
 def download_img(url, filename):
-    response = get_http(url)
+    response = do_request(url)
     response.raise_for_status()
     with open(filename, 'wb') as file:
         file.write(response.content)
@@ -92,7 +90,7 @@ def download_book(book_url, book_sub_path, image_path, skip_book=False,
     logger.info(f'{book_url}: скачиваем книгу...')
     book_id = urlparse(book_url).path.replace('/', '').replace('b', '')
 
-    book_page_resp = get_http(book_url)
+    book_page_resp = do_request(book_url)
     book_page_resp.raise_for_status()
     check_for_redirect(book_page_resp)
 
@@ -101,7 +99,8 @@ def download_book(book_url, book_sub_path, image_path, skip_book=False,
 
     if not parsed_book['download_book_url']:
         raise NoBookException('Книга недоступна для скачивания')
-    book_resp = get_http(parsed_book['download_book_url'])
+
+    book_resp = do_request(parsed_book['download_book_url'])
     book_resp.raise_for_status()
     check_for_redirect(book_resp)
 
@@ -141,7 +140,7 @@ def get_links_for_category(category_url, start_page=1, end_page=0):
     while True:
         url = f'{category_url}{page_number}/'
 
-        page_resp = get_http(url)
+        page_resp = do_request(url)
         page_resp.raise_for_status()
         try:
             check_for_redirect(page_resp)
@@ -162,7 +161,7 @@ def get_links_for_category(category_url, start_page=1, end_page=0):
     return book_urls
 
 
-def get_http(url, headers=None, params=None, wait=True):
+def do_request(url, headers=None, params=None, wait=True):
     resp_ok = False
     try_counter, max_try_count = 1, 10
     while not resp_ok and try_counter <= max_try_count:
