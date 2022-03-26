@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+
+  <title>Tululu Library</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
+</head>
+
+<body>
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-9">
+        Категория: Фантастика и фэнтези
+        {% for book in books %}
+        <div class="row">
+          <div class="col-8 col-sm-6">
+              <img src="{{book.img_src}}" alt="Image" class="img-fluid">
+              <div>
+                <h3 class="heading mt-3 mb-3 text-dark">{{book.title}}</h3>
+                <h4 class="heading mt-3 mb-3 text-dark">{{book.author}}</h4>
+              </div>
+          </div>
+          <div class="col-4 col-sm-6">
+            Level 2: .col-4 .col-sm-6
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <script src="js/bootstrap.min.js"></script>
+</body>
+
+</html>

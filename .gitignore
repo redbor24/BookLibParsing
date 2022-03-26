@@ -1,6 +1,12 @@
 books/*.txt
 images/*.jpg
 images/*.gif
+scratch*
+*json*
+css/
+js/
+bootstrap/
+index.html
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
