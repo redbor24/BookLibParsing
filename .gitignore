@@ -3,7 +3,9 @@ images/*.jpg
 images/*.gif
 scratch*
 *json*
-css/
+*.css
+*.map
+!style.css
 js/
 bootstrap/
 index.html

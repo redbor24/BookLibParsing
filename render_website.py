@@ -7,17 +7,6 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from livereload import Server, shell
 from more_itertools import chunked, grouper
 
-EMPTY_BOOK = {
-    'url': '',
-    'img_src': '',
-    'book_path': '',
-    'title': '',
-    'author': '',
-    'comments': '',
-    'genres': ''
-}
-
-
 def quote_book(book):
     return {
         'url': book['url'],
@@ -34,7 +23,7 @@ def load_books(path):
     with open(path, 'r', encoding='utf-8') as f:
         books = json.load(f)
     return list(
-        grouper(list(map(lambda book: quote_book(book), books)), 2, EMPTY_BOOK)
+        grouper(list(map(lambda book: quote_book(book), books)), 2, None)
                 )
 
 

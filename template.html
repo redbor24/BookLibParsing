@@ -17,26 +17,32 @@
         Категория: Фантастика и фэнтези
         {% for book1, book2 in books %}
         <div class="row">
-          <div class="col-2 col-sm-6">
-            <img src="{{book1.img_src}}" alt="Image" class="img-fluid">
+          <div class="col">
+            <div class="row">
+              <div class="col-4">
+                <img src="{{book1.img_src}}" alt="Image" class="img-fluid">
+              </div>
+              <div class="col-8">
+                <h3 class="heading mt-3 mb-3 text-dark">{{book1.title}}</h3>
+                <h4 class="heading mt-3 mb-3 text-dark">{{book1.author}}</h4>
+                <a href="{{book1.book_path}}" class="nav-link text-left">Читать</a>
+              </div>
+            </div>
           </div>
-          <div class="col-4 col-sm-6">
-            <h3 class="heading mt-3 mb-3 text-dark">{{book1.title}}</h3>
-            <h4 class="heading mt-3 mb-3 text-dark">{{book1.author}}</h4>
-            <a href="{{book1.book_path}}" class="nav-link text-left">Читать</a>
-          </div>
-          <div class="col-2 col-sm-6">
-            {% if book2.img_src %}
-              <img src="{{book2.img_src}}" alt="Image" class="img-fluid">
-            {% endif %}
-          </div>
-          <div class="col-4 col-sm-6">
-            {% if book2.book_path %}
-              <h3 class="heading mt-3 mb-3 text-dark">{{book2.title}}</h3>
-              <h4 class="heading mt-3 mb-3 text-dark">{{book2.author}}</h4>
-              <a href="{{book2.book_path}}" class="nav-link text-left">Читать</a>
-            {% endif %}
-          </div>
+          {% if book2 %}
+            <div class="col">
+              <div class="row">
+                <div class="col-4">
+                  <img src="{{book2.img_src}}" alt="Image" class="img-fluid">
+                </div>
+                <div class="col-8">
+                  <h3 class="heading mt-3 mb-3 text-dark">{{book2.title}}</h3>
+                  <h4 class="heading mt-3 mb-3 text-dark">{{book2.author}}</h4>
+                  <a href="{{book2.book_path}}" class="nav-link text-left">Читать</a>
+                </div>
+              </div>
+            </div>
+          {% endif %}
         </div>
         {% endfor %}
       </div>

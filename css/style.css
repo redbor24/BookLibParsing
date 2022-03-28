@@ -1,0 +1,9 @@
+.row > div {
+  flex: 1;
+  margin-bottom: 30px;
+}
+
+.col > div {
+  margin-right: 30px;
+  border: 1px solid grey;
+}
