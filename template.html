@@ -3,11 +3,11 @@
 
 <head>
 
-  <title>Tululu Library</title>
+  <title>Tululu local Library</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
-  <link href="css/style.css" rel="stylesheet" media="screen">
+  <link href="../css/bootstrap.min.css" rel="stylesheet" media="screen">
+  <link href="../css/style.css" rel="stylesheet" media="screen">
 </head>
 
 <body>
@@ -15,17 +15,30 @@
     <div class="row">
       <div class="col-sm-9">
         Категория: Фантастика и фэнтези
+        <nav aria-label="Page navigation example">
+          <ul class="pagination justify-content-center">
+            <li class="page-item disabled">
+              <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+            </li>
+            <li class="page-item"><a class="page-link" href="#">1</a></li>
+            <li class="page-item"><a class="page-link" href="#">2</a></li>
+            <li class="page-item"><a class="page-link" href="#">3</a></li>
+            <li class="page-item">
+              <a class="page-link" href="#">Next</a>
+            </li>
+          </ul>
+        </nav>
         {% for book1, book2 in books %}
         <div class="row">
           <div class="col">
             <div class="row">
               <div class="col-4">
-                <img src="{{book1.img_src}}" alt="Image" class="img-fluid">
+                <img src="../{{book1.img_src}}" alt="Image" class="img-fluid">
               </div>
               <div class="col-8">
                 <h3 class="heading mt-3 mb-3 text-dark">{{book1.title}}</h3>
                 <h4 class="heading mt-3 mb-3 text-dark">{{book1.author}}</h4>
-                <a href="{{book1.book_path}}" class="nav-link text-left">Читать</a>
+                <a href="../{{book1.book_path}}" class="nav-link text-left">Читать</a>
               </div>
             </div>
           </div>
@@ -33,18 +46,31 @@
             <div class="col">
               <div class="row">
                 <div class="col-4">
-                  <img src="{{book2.img_src}}" alt="Image" class="img-fluid">
+                  <img src="../{{book2.img_src}}" alt="Image" class="img-fluid">
                 </div>
                 <div class="col-8">
                   <h3 class="heading mt-3 mb-3 text-dark">{{book2.title}}</h3>
                   <h4 class="heading mt-3 mb-3 text-dark">{{book2.author}}</h4>
-                  <a href="{{book2.book_path}}" class="nav-link text-left">Читать</a>
+                  <a href="../{{book2.book_path}}" class="nav-link text-left">Читать</a>
                 </div>
               </div>
             </div>
           {% endif %}
         </div>
         {% endfor %}
+        <nav aria-label="Page navigation example">
+          <ul class="pagination justify-content-center">
+            <li class="page-item disabled">
+              <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+            </li>
+            <li class="page-item"><a class="page-link" href="#">1</a></li>
+            <li class="page-item"><a class="page-link" href="#">2</a></li>
+            <li class="page-item"><a class="page-link" href="#">3</a></li>
+            <li class="page-item">
+              <a class="page-link" href="#">Next</a>
+            </li>
+          </ul>
+        </nav>
       </div>
     </div>
   </div>

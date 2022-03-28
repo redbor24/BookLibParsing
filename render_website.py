@@ -82,4 +82,4 @@ if __name__ == '__main__':
     server = Server()
     server.watch(template_path, render_page(lib_path, template_path, page_path))
     server.watch('css/*.css', render_page(lib_path, template_path, page_path))
-    server.serve(root=pages_path, port=80, default_filename='index1.html')
+    server.serve(root='.', port=80, default_filename='pages/index1.html')
