@@ -8,7 +8,7 @@ scratch*
 !style.css
 js/
 bootstrap/
-index.html
+index*.html
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
