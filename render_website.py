@@ -20,8 +20,8 @@ def quote_book(book):
         'book_path': parse.quote(book['book_path'].replace('\\', '/')),
         'title': book['title'],
         'author': book['author'],
-        # 'comments': book['comments'],
-        # 'genres': book['genres']
+        'comments': book['comments'],
+        'genres': book['genres']
     }
 
 
@@ -41,9 +41,12 @@ def render_page(lib_path, template_path, page_path, is_debug=False):
     def render():
         template = env.get_template(template_path)
         books = load_books(lib_path)
+        page_count = len(books)
         for index, page in enumerate(books, 1):
             rendered_page = template.render(
-                books=page
+                books=page,
+                page_count=page_count,
+                page_num=index
             )
             with open(page_path.format(index), 'w', encoding="utf8") as file:
                 file.write(rendered_page)
@@ -76,10 +79,13 @@ if __name__ == '__main__':
     os.makedirs(pages_path, exist_ok=True)
     page_path = f'{pages_path}/index{{0}}.html'
 
-    # render_page(lib_path, template_path, page_path, True)
-    # exit()
-
     server = Server()
-    server.watch(template_path, render_page(lib_path, template_path, page_path))
-    server.watch('css/*.css', render_page(lib_path, template_path, page_path))
+    server.watch(
+        template_path,
+        render_page(lib_path, template_path, page_path)
+    )
+    server.watch(
+        'css/*.css',
+        render_page(lib_path, template_path, page_path)
+    )
     server.serve(root='.', port=80, default_filename='pages/index1.html')
