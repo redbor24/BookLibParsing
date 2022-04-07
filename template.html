@@ -13,25 +13,25 @@
 <body>
   <div class="container">
     <div class="row">
-      <div class="col-sm-9">
-        Категория: Фантастика и фэнтези
-        <nav aria-label="Page navigation example">
-          <ul class="pagination justify-content-center">
-            <li class="page-item {% if page_num == 1 %}disabled{% endif %}">
-              <a class="page-link" href="index{{page_num-1}}.html">Пред.</a>
-            </li>
+      <div class="col-sm-9 px-2">
+<!--        Категория: Фантастика и фэнтези-->
+            <nav aria-label="Page navigation example" class="mt-4">
+              <ul class="pagination justify-content-center">
+                <li class="page-item {% if page_num == 1 %}disabled{% endif %}">
+                  <a class="page-link" href="index{{page_num-1}}.html">Пред.</a>
+                </li>
 
-            {% for page in range(page_count) %}
-              <li class="page-item {% if loop.index == page_num %}active{% endif %}">
-                <a class="page-link" href="index{{loop.index}}.html">{{loop.index}}</a>
-              </li>
-            {% endfor %}
+                {% for page in range(page_count) %}
+                  <li class="page-item {% if loop.index == page_num %}active{% endif %}">
+                    <a class="page-link" href="index{{loop.index}}.html">{{loop.index}}</a>
+                  </li>
+                {% endfor %}
 
-            <li class="page-item {% if page_num == page_count %}disabled{% endif %}">
-              <a class="page-link" href="index{{page_num+1}}.html">След.</a>
-            </li>
-          </ul>
-        </nav>
+                <li class="page-item {% if page_num == page_count %}disabled{% endif %}">
+                  <a class="page-link" href="index{{page_num+1}}.html">След.</a>
+                </li>
+              </ul>
+            </nav>
 
         {% for book1, book2 in books %}
         <div class="row">
@@ -41,8 +41,13 @@
                 <img src="../{{book1.img_src}}" alt="Image" class="img-fluid">
               </div>
               <div class="col-8">
-                <h3 class="heading mt-3 mb-3 text-dark">{{book1.title}}</h3>
-                <h4 class="heading mt-3 mb-3 text-dark">{{book1.author}}</h4>
+                <h3 class="text-dark">{{book1.title}}</h3>
+                <h4>{{book1.author}}</h4>
+                <div class="text-left">
+                  {% for genre in book1.genres %}
+                    <div class="badge badge-info text-dark">{{ genre }}</div>
+                  {% endfor %}
+                </div>
                 <a href="../{{book1.book_path}}" class="nav-link text-left">Читать</a>
               </div>
             </div>
@@ -63,6 +68,7 @@
           {% endif %}
         </div>
         {% endfor %}
+
         <nav aria-label="Page navigation example">
           <ul class="pagination justify-content-center">
             <li class="page-item {% if page_num == 1 %}disabled{% endif %}">
