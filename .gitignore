@@ -1,14 +1,13 @@
 books/*.txt
-images/*.jpg
-images/*.gif
+# images/*.jpg
+# images/*.gif
 scratch*
 *json*
-*.css
+# *.css
 *.map
-!style.css
 js/
 bootstrap/
-index*.html
+# index*.html
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

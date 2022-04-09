@@ -28,7 +28,6 @@
     -h, --help            Показ справки
     -start_page           Начальная страница категории
     -end_page             Конечная страница категории
-    -book_count           Количество книг для скачивания
     -dest_folder          Папка для сохранения всех скачанных файлов
     -skip_imgs            Не сохранять картинки
     -skip_books           Не сохранять книги
@@ -36,7 +35,7 @@
 
 ## Примеры вызовов
     > python main.py
-    usage: main.py [-h] -start_page START_PAGE [-end_page END_PAGE] [-book_count BOOK_COUNT]
+    usage: main.py [-h] -start_page START_PAGE [-end_page END_PAGE]
     main.py: error: the following arguments are required: -start_page
 
     > python main.py -start_page 1 -end_page 10
