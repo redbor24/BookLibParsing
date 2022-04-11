@@ -1,6 +1,9 @@
 ## Описание
-Программа скачивает из библиотеки [tululu.ru](tululu.ru) книги жанра 
-"Научная фантастика" с заданного диапазона страниц.
+Учебный проект devman.
+
+Программа позволяет скачать из библиотеки [tululu.ru](tululu.ru) книги жанра 
+"Научная фантастика" с заданного диапазона страниц и сгенерировать из них 
+локальный каталог с разбивкой на страницы
 
 Лог работы сохраняется в файл `LibParser.log` в папке программы.
 
@@ -34,15 +37,24 @@
     -json_path            Путь к json-файлу с результатами скачивания
 
 ## Примеры вызовов
-    > python main.py
-    usage: main.py [-h] -start_page START_PAGE [-end_page END_PAGE]
-    main.py: error: the following arguments are required: -start_page
-
-    > python main.py -start_page 1 -end_page 10
-
-    > python main.py -start_page 1 
-
-    > python main.py -start_page 1 book_count 4
+### Скачивание книг
+```
+python main.py
+usage: main.py [-h] -start_page START_PAGE [-end_page END_PAGE]
+main.py: error: the following arguments are required: -start_page
+```
+Скачивание книг со страниц с 1 по 10
+```
+python main.py -start_page 1 -end_page 10
+```
+Скачивание книг со страниц с 2 до последней
+```
+python main.py -start_page 2 
+```
+### Формирование локального каталога
+```
+python render_website.py
+```
 
 ## Сайт на GitHub Pages
 [Скачанный каталог](https://redbor24.github.io/BookLibParsing/pages/index1.html)
