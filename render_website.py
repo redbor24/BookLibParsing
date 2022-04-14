@@ -1,6 +1,4 @@
-
 import logging
-import argparse
 import json
 import os
 from pathlib import Path
@@ -9,10 +7,9 @@ from urllib import parse
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from livereload import Server
 from more_itertools import grouper, chunked
-from pprint import pprint
 
 
-INDEX_PAGE_CHUNK = 5  # Количество книг на одной странице
+INDEX_PAGE_CHUNK = 5
 logger = logging.getLogger()
 
 
@@ -32,9 +29,9 @@ def load_books(path):
     with open(path, 'r', encoding='utf-8') as f:
         books = json.load(f)
 
-    lst1 = list(map(lambda book: quote_book(book), books))
-    lst2 = list(grouper(lst1, 2, None))
-    return list(chunked(lst2, INDEX_PAGE_CHUNK))
+    quoted_books = list(map(lambda book: quote_book(book), books))
+    paired_books = list(grouper(quoted_books, 2, None))
+    return list(chunked(paired_books, INDEX_PAGE_CHUNK))
 
 
 def render_page(lib_path, template_path, pages_path, page_filename, first_start=False):

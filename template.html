@@ -39,17 +39,17 @@
           <div class="col">
             <div class="row">
               <div class="col-4">
-                <img src="../{{book1.img_src}}" alt="Image" class="img-fluid">
+                <img src="../{{book1.img_src}}" alt="{{book1.title}}" class="img-fluid">
               </div>
               <div class="col-8">
-                <h3 class="text-dark">{{book1.title}}</h3>
+                <h3 class="text-dark">{{book1.title}}11</h3>
                 <h4>{{book1.author}}</h4>
                 <div class="text-left">
                   {% for genre in book1.genres %}
                     <div class="badge badge-info text-dark">{{ genre }}</div>
                   {% endfor %}
                 </div>
-                <a href="../{{book1.book_path}}" class="nav-link text-left">Читать</a>
+                <a href="../{{book1.book_path}}" class="nav-link text-left" target="_blank">Читать</a>
               </div>
             </div>
           </div>
@@ -57,7 +57,7 @@
             <div class="col">
               <div class="row">
                 <div class="col-4">
-                  <img src="../{{book2.img_src}}" alt="Image" class="img-fluid">
+                  <img src="../{{book2.img_src}}" alt="{{book2.title}}" class="img-fluid">
                 </div>
                 <div class="col-8">
                   <h3 class="heading mt-3 mb-3 text-dark">{{book2.title}}</h3>
