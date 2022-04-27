@@ -35,31 +35,6 @@ def load_books(path):
     return list(chunked(paired_books, INDEX_PAGE_CHUNK))
 
 
-# def render_page(lib_path, template_path, pages_path, page_filename, first_start=False):
-#     def render():
-#         books = load_books(lib_path)
-#         page_count = len(books)
-#         logger.info(f'Рендерим странички ({page_count})...')
-#         template = env.get_template(template_path)
-#         for index, page in enumerate(books, 1):
-#             logger.info(f'  рендерим страничку: {index}')
-#             rendered_page = template.render(
-#                 books=page,
-#                 pages_path=pages_path,
-#                 page_count=page_count,
-#                 page_num=index
-#             )
-#             with open(Path(pages_path) / page_filename.format(index), 'w',
-#                       encoding="utf8") as file:
-#                 file.write(rendered_page)
-#         logger.info('Странички отрендерены')
-#
-#     if first_start:
-#         render()
-#
-#     return render
-#
-#
 def render_page(lib_path, template_path, pages_path, page_filename):
     books = load_books(lib_path)
     page_count = len(books)
