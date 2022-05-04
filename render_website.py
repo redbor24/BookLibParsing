@@ -41,7 +41,6 @@ def render_page(lib_path, template_path, pages_path, page_filename):
     logger.info(f'Рендерим странички ({page_count})...')
     template = env.get_template(template_path)
     for index, page in enumerate(books, 1):
-        print(index)
         logger.info(f'  рендерим страничку: {index}')
         rendered_page = template.render(
             books=page,
